@@ -1,0 +1,24 @@
+package main
+
+import (
+	"net/http"
+
+	"github.com/Abdul4code/FairShare/internal"
+	"github.com/julienschmidt/httprouter"
+)
+
+// Router constructs and returns the application's HTTP router with routes and custom
+// NotFound and MethodNotAllowed handlers wired up.
+func (app *application) Router() *httprouter.Router {
+	// instantiate new router
+	router := httprouter.New()
+
+	// customize the  not found and method not allowed page
+	router.NotFound = http.HandlerFunc(internal.NotFoundError)
+	router.MethodNotAllowed = http.HandlerFunc(internal.MethodNotAllowed)
+
+	// groups routes
+	router.HandlerFunc(http.MethodPost, "/v1/groups", app.CreateGroupHandler)
+
+	return router
+}
