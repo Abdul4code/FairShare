@@ -3,7 +3,7 @@ testdata_dir = "testdata"
 tmp_dir = "bin"
 
 [build]
-  args_bin = ["-addr", ":8000", "-env", "staging"]
+  args_bin = ["-addr", ":4000", "-env", "staging"]
   bin = "./bin/main"
   cmd = "go build -o ./bin/main ./cmd/api"
   delay = 1000
