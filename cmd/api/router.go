@@ -23,6 +23,7 @@ func (app *application) Router() *httprouter.Router {
 	router.HandlerFunc(http.MethodPut, "/v1/groups/:id", app.UpdateGroupHandler)
 	router.HandlerFunc(http.MethodDelete, "/v1/groups/:id", app.DeleteGroupHandler)
 	router.HandlerFunc(http.MethodPatch, "/v1/groups/:id", app.PatchGroupHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/groups", app.GetGroupsHandler)
 
 	return router
 }

@@ -1,9 +1,12 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
+	"time"
 
 	"github.com/Abdul4code/FairShare/internal"
 	"github.com/Abdul4code/FairShare/internal/model"
@@ -169,4 +172,69 @@ func (m *GroupModel) DeleteGroup(id int) error {
 	}
 
 	return nil
+}
+
+// GetAll retrieves a list of groups from the database. It supports filtering
+// by name, currency, and description, as well as pagination and sorting.
+//
+// It returns a slice of pointers to model.Group, a model.MetaData struct
+// containing pagination info, and an error if any occurred during the query.
+func (m GroupModel) GetAll(filters *model.GroupQuery) ([]*model.Group, model.MetaData, error) {
+	groups := []*model.Group{}
+	metadata := model.MetaData{}
+	query := fmt.Sprintf(`
+		SELECT count(id) OVER(), id, name, currency, description, created_by, created_at, version
+		FROM groups
+		WHERE 
+			(name ILIKE '%%' || $1 || '%%' OR $1 = '')
+		AND 
+			(currency = $2 OR $2 = '')
+		AND 
+			(to_tsvector('simple', description) @@ plainto_tsquery('simple', $3) OR $3 = '')
+		ORDER BY %s %s, id ASC
+		LIMIT %d OFFSET %d;
+		`, internal.GetSortValue(filters.Sort), internal.GetSortDirection(filters.Sort),
+		filters.PageSize,
+		(filters.Page-1)*filters.PageSize,
+	)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	row, err := m.conn.QueryContext(ctx,
+		query,
+		filters.Name,
+		filters.Currency,
+		filters.Description,
+	)
+	if err != nil {
+		return nil, model.MetaData{}, err
+	}
+
+	for row.Next() {
+		group := model.Group{}
+
+		err := row.Scan(
+			&metadata.Total,
+			&group.Id,
+			&group.Name,
+			&group.Currency,
+			&group.Description,
+			&group.CreatedBy,
+			&group.CreatedAt,
+			&group.Version,
+		)
+
+		if err != nil {
+			return nil, metadata, nil
+		}
+
+		groups = append(groups, &group)
+	}
+
+	metadata.CurrentPage = filters.Page
+	metadata.LastPage = int(math.Ceil(float64(metadata.Total) / float64(filters.PageSize)))
+	metadata.PageSize = filters.PageSize
+
+	return groups, metadata, nil
 }

@@ -196,3 +196,34 @@ func (app *application) DeleteGroupHandler(w http.ResponseWriter, r *http.Reques
 	}
 	internal.WriteJSON(w, http.StatusOK, message)
 }
+
+// GetGroupsHandler handles GET /v1/groups. It retrieves a list of groups
+// from the database, supporting filtering, pagination, and sorting.
+func (app *application) GetGroupsHandler(w http.ResponseWriter, r *http.Request) {
+	val := validation.New()
+
+	filters := model.GroupQuery{
+		Page:        internal.ReadQueryInt(r, val, "page", 1),
+		PageSize:    internal.ReadQueryInt(r, val, "page_size", 10),
+		Name:        internal.ReadQueryString(r, "name", ""),
+		Description: internal.ReadQueryString(r, "description", ""),
+		Currency:    internal.ReadQueryString(r, "currency", ""),
+		Sort:        internal.ReadQueryString(r, "sort", "id"),
+	}
+
+	if errors := filters.ValidateGroupQuery(val); errors != nil {
+		internal.BadRequestError(w, r, errors)
+		return
+	}
+
+	data, meta, err := app.Models.Groups.GetAll(&filters)
+	if err != nil {
+		internal.InternalServerError(w, r, err)
+		return
+	}
+
+	internal.WriteJSON(w, http.StatusOK, map[string]any{
+		"metadata": meta,
+		"data":     data,
+	})
+}

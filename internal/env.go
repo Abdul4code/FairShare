@@ -6,6 +6,9 @@ import (
 	"strconv"
 )
 
+// GetEnvInt retrieves an integer value from the environment variables
+// based on the provided key. If the key is not found or the value
+// cannot be converted to an integer, an error is returned.
 func GetEnvInt(key string) (int, error) {
 	value := os.Getenv(key)
 
@@ -22,6 +25,8 @@ func GetEnvInt(key string) (int, error) {
 	return val, nil
 }
 
+// GetString retrieves a string value from the environment variables
+// based on the provided key. If the key is not found, an error is returned.
 func GetString(key string) (string, error) {
 	value := os.Getenv(key)
 
