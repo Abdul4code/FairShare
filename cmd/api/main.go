@@ -102,6 +102,7 @@ func main() {
 		app.Config.Addr,
 		app.Config.Env,
 	)
+	internal.NewLogger().Log.Info().Str("address", app.Config.Addr).Str("environment", app.Config.Env).Msg("starting server")
 	if err := server.ListenAndServe(); err != nil {
 		internal.NewLogger().Log.Panic().Err(err).Msg("failed to start server")
 	}
