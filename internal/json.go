@@ -19,13 +19,15 @@ func WriteJSON(
 ) {
 	obj, err := json.Marshal(data)
 	if err != nil {
-		LogError(err, false)
+		logger := NewLogger()
+		logger.Log.Panic().Err(err).Msg("failed to marshal JSON")
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	if _, err = w.Write(obj); err != nil {
-		LogError(err, false)
+		logger := NewLogger()
+		logger.Log.Panic().Err(err).Msg("failed to write JSON response")
 		return
 	}
 }
@@ -68,7 +70,8 @@ func ReadJSON(
 		case errors.Is(err, io.EOF):
 			return fmt.Errorf("invalid Request body: The request body cannot be empty")
 		case errors.As(err, &InvalidUnmarshalError):
-			panic("internal Server error: Failed to read JSON body")
+			logger := NewLogger()
+			logger.Log.Panic().Err(err).Msg("internal Server error: Failed to read JSON body")
 
 		case errors.Is(err, io.ErrUnexpectedEOF):
 			return errors.New("invalid Request body: Sysntax error")

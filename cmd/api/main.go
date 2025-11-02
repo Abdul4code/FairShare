@@ -30,22 +30,22 @@ func main() {
 	// read database settings from environment
 	dsn, err := internal.GetString("dsn")
 	if err != nil {
-		panic(err)
+		internal.NewLogger().Log.Panic().Err(err).Msg("failed to get DSN from environment")
 	}
 
 	maxCon, err := internal.GetEnvInt("db_max_cons")
 	if err != nil {
-		panic(err)
+		internal.NewLogger().Log.Panic().Err(err).Msg("failed to get db_max_cons from environment")
 	}
 
 	maxIdleCon, err := internal.GetEnvInt("db_max_idle_cons")
 	if err != nil {
-		panic(err)
+		internal.NewLogger().Log.Panic().Err(err).Msg("failed to get db_max_idle_cons from environment")
 	}
 
 	maxIdleTime, err := internal.GetString("db_max_idle_time")
 	if err != nil {
-		panic(err)
+		internal.NewLogger().Log.Panic().Err(err).Msg("failed to get db_max_idle_time from environment")
 	}
 
 	// create a config instance with database settings prepopulated
@@ -61,9 +61,6 @@ func main() {
 	// read command line flags used for settings into the config instance
 	port, _ := internal.GetString("port")
 	env, _ := internal.GetString("environment")
-
-	fmt.Println(port)
-	fmt.Println(env)
 
 	flag.StringVar(
 		&cfg.Addr,
@@ -84,7 +81,7 @@ func main() {
 	// create a database connection
 	db, err := repository.New(cfg.DB)
 	if err != nil {
-		panic(err)
+		internal.NewLogger().Log.Panic().Err(err).Msg("failed to create database connection")
 	}
 
 	// create application instance and inject config
@@ -106,6 +103,6 @@ func main() {
 		app.Config.Env,
 	)
 	if err := server.ListenAndServe(); err != nil {
-		panic(err)
+		internal.NewLogger().Log.Panic().Err(err).Msg("failed to start server")
 	}
 }

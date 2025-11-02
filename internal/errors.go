@@ -3,29 +3,44 @@ package internal
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
+
+	"github.com/rs/zerolog"
 )
 
-// Logger struct for logging errors
+// Logger type holds the standard logger item for this project
 type Logger struct {
-	Log *log.Logger
+	Log zerolog.Logger
 }
 
 // ErrNotFound is returned when a requested item could not be found
 var ErrNotFound = errors.New("the requested Item is not found")
 
-// LogError logs the given data. If panic is true, it panics after logging.
-func LogError(data any, panic bool) {
-	logger := Logger{
-		Log: log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Llongfile),
-	}
-	if panic {
-		logger.Log.Panic(data)
+// LogError writes the given data to stdout (using zerolog) and appends a
+// JSON Lines (jsonl) entry to errors.jsonl in the repository root.
+// The jsonl entry includes a UTC timestamp, the formatted error string and
+// the panic flag so automated tooling can consume the file.
+//
+// Note: we keep writing to stdout with zerolog as a fallback if file IO fails.
+func NewLogger() *Logger {
+	L := &Logger{}
+	L.Log = zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
+
+	f, ferr := os.OpenFile("errors.jsonl", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
+	if ferr != nil {
+		// if opening the file fails, record that fact to stdout logger
+		L.Log.Error().Err(ferr).Msg("failed to open errors.jsonl for appending")
+		return L
 	}
 
-	logger.Log.Println(data)
+	multi := zerolog.MultiLevelWriter(L.Log, f)
+	multi_logger := zerolog.New(multi).With().Timestamp().Caller().Logger()
+
+	return &Logger{
+		Log: multi_logger,
+	}
 }
 
 // WriteJSON writes the given data as a JSON response with the specified status code.
@@ -74,7 +89,8 @@ func InternalServerError(
 	err error,
 ) {
 	WriteError(w, http.StatusInternalServerError, "Unexpected internal server error")
-	LogError(err, false)
+	logger := NewLogger()
+	logger.Log.Error().Err(err).Msg("internal server error")
 }
 
 // UnauthorizedError is a helper function to write a 401 Unauthorized error response.

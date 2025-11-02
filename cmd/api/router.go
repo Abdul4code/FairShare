@@ -17,6 +17,9 @@ func (app *application) Router() *httprouter.Router {
 	router.NotFound = http.HandlerFunc(internal.NotFoundError)
 	router.MethodNotAllowed = http.HandlerFunc(internal.MethodNotAllowed)
 
+	// health check route
+	router.HandlerFunc(http.MethodGet, "/v1/health", app.healthCheckHandler)
+
 	// groups routes
 	router.HandlerFunc(http.MethodPost, "/v1/groups", app.CreateGroupHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/groups/:id", app.GetGroupHandler)
